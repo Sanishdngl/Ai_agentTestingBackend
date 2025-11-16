@@ -10,11 +10,11 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL, // your vercel URL
-    methods: ["GET", "POST"],
+    origin: process.env.CLIENT_URL,
     credentials: true,
   })
 );
+
 
 app.use(express.json());
 
