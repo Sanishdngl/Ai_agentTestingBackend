@@ -7,37 +7,40 @@ import Chat from "./models/Chat.js";
 
 dotenv.config();
 const app = express();
-app.use(cors({
-  origin: process.env.CLIENT_URL,
-  methods: ["GET", "POST"],
-  credentials: true
-}));
+
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL, // your vercel URL
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
-// connect to MongoDB (optional)
-mongoose.connect(process.env.MONGO_URI).then(() => console.log("MongoDB Connected"));
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB Connected"))
+  .catch((err) => console.error(err));
 
 // OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-// example route: send prompt to AI
-
+// AI route
 app.post("/api/ask", async (req, res) => {
   const { prompt, userId } = req.body;
 
   try {
-    // find or create chat history
     let chat = await Chat.findOne({ userId });
     if (!chat) {
       chat = await Chat.create({ userId, messages: [] });
     }
 
-    // push user message
     chat.messages.push({ role: "user", content: prompt });
 
-    // include last 5 messages for context
     const recentMessages = chat.messages.slice(-5);
 
     const response = await openai.chat.completions.create({
@@ -50,7 +53,6 @@ app.post("/api/ask", async (req, res) => {
 
     const reply = response.choices[0].message.content;
 
-    // save AI response
     chat.messages.push({ role: "assistant", content: reply });
     await chat.save();
 
@@ -61,7 +63,7 @@ app.post("/api/ask", async (req, res) => {
   }
 });
 
-// Fetch chat history for a user
+// Fetch chat history
 app.post("/api/history", async (req, res) => {
   const { userId } = req.body;
 
@@ -74,7 +76,9 @@ app.post("/api/history", async (req, res) => {
   }
 });
 
-// IMPORTANT: Render assigns port
+// Correct PORT handling (Render)
 const PORT = process.env.PORT || 5000;
 
-app.listen(5000, () => console.log("Server running on port ${PORT}"));
+app.listen(PORT, () =>
+  console.log(`Server running on port ${PORT}`)
+);
