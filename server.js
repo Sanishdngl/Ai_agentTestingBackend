@@ -8,13 +8,41 @@ import Chat from "./models/Chat.js";
 dotenv.config();
 const app = express();
 
+// ✅ BEST CORS CONFIGURATION - Allows multiple origins
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://ai-agent-testing-frontend.vercel.app",
+  "https://ai-agent-testing-frontend-*.vercel.app",
+  "https://ai-agent-testing-frontend-4zcy7jtnr-sanish-dangols-projects.vercel.app"
+];
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin is in allowed list or matches pattern
+      if (
+        allowedOrigins.some(allowedOrigin => {
+          if (allowedOrigin.includes('*')) {
+            const pattern = allowedOrigin.replace('*', '.*');
+            return new RegExp(pattern).test(origin);
+          }
+          return allowedOrigin === origin;
+        })
+      ) {
+        return callback(null, true);
+      } else {
+        console.log('Blocked by CORS:', origin);
+        return callback(new Error('Not allowed by CORS'), false);
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
-
 
 app.use(express.json());
 
@@ -74,6 +102,11 @@ app.post("/api/history", async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Failed to load chat history" });
   }
+});
+
+// Health check route
+app.get("/api/health", (req, res) => {
+  res.json({ status: "OK", message: "Server is running" });
 });
 
 // Correct PORT handling (Render)
